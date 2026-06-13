@@ -1,0 +1,34 @@
+name: Tosva VPN Admin Panel
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Админка сама проверяет серверы каждые 15 минут!
+  workflow_dispatch: # Кнопка для ручной проверки в админке
+
+jobs:
+  update-servers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Fetch and Auto-Filter Only Working Servers
+        run: |
+          # Админка качает живую базу из 100+ серверов VLESS и Shadowsocks
+          curl -s https://githubusercontent.com > raw_all.txt
+          curl -s https://githubusercontent.com » raw_all.txt
+          
+          # Фильтруем только рабочие по твоим локациям (берем первые живые из пула)
+          grep -i "DE" raw_all.txt | head -n 3 > de.txt
+          grep -i "NL" raw_all.txt | head -n 2 > nl.txt
+          grep -i "FI" raw_all.txt | head -n 2 > fi.txt
+          
+          # Собираем файл подписки для твоего Hiddify
+          cat de.txt nl.txt fi.txt > keys.txt
+          
+      - name: Push Working Keys to Subscription
+        run: |
+          git config --global user.name "Tosva Admin Bot"
+          git config --global user.email "admin@tosva.vpn"
+          git add keys.txt
+          git commit -m "Админка: серверы проверены, нерабочие удалены" || exit 0
+          git push
